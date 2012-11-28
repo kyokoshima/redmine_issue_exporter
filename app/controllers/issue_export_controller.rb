@@ -3,8 +3,9 @@ require_dependency 'spreadsheet'
 class IssueExportController < ApplicationController
   include ActionView::Helpers::NumberHelper
   include IssuesHelper
+  # include CustomFieldsHelper
 
-  unloadable
+  # unloadable
 
   def index
   	project = Project.find(params[:project_id], 
@@ -36,9 +37,10 @@ class IssueExportController < ApplicationController
       i.journals.find(:all, :include=>[:user, :details], :order=>"#{Journal.table_name}.created_on asc").each do |j|
         s[history_row, 0] = ["##{history_index}","#{format_time(j.created_on)}","#{j.user.name}"].join(" - ")
         logger.debug("details --- #{j.details}")
-        # details_to_strings(j.details, true).each do |d|
-          s[history_row+=1, 0] = "- #{j.details}"
-        # end
+        details_to_strings(j.details, true).each do |d|
+          # s[history_row+=1, 0] = "- #{j.details}"
+          s[history_row+=1, 0] = "- #{d}"
+        end
         if j.notes?
           s[history_row+=1, 0] = "#{j.notes}"
         end
