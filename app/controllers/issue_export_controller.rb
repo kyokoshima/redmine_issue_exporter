@@ -5,7 +5,11 @@ class IssueExportController < ApplicationController
   include IssuesHelper
   # include CustomFieldsHelper
 
-  # unloadable
+  unloadable
+
+  class IssuesHelper
+    include CustomFieldsHelper
+  end
 
   def index
   	project = Project.find(params[:project_id], 
