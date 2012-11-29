@@ -1,0 +1,12 @@
+GEM
+  specs:
+    ruby-ole (1.2.11.4)
+    spreadsheet (0.7.4)
+      ruby-ole (>= 1.0)
+
+PLATFORMS
+  x86-mingw32
+
+DEPENDENCIES
+  ruby-ole (= 1.2.11.4)
+  spreadsheet
