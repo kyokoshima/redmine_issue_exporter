@@ -13,25 +13,58 @@ module IssueExportHelper
       download_book = Spreadsheet::Workbook.new
     	project.issues.each do |issue|
     		s= download_book.create_worksheet(:name=>"##{issue.id} - #{create_xls_sheet_name(issue.subject)}")
+
+        # log("self ---- #{self.to_s}")
         tpl_sheet.each do |row|
+          formatted_columns = []
           row.each_with_index do |cell, col_index|
-            cell_value = cell.to_s
-            if cell_value.start_with?('$')
-              key = cell_value.gsub(/\$/, '')
-              logger.debug("key ----- #{key}")
-              begin
-                cell_value = eval(key)
-              rescue NameError
-                logger.debug("not found ----- #{key}")
-                ''
+            if block?(cell.to_s)
+              cell_to_variable(cell.to_s, binding).each do |v|
+                # s.insert_row row.idx
               end
+            else
+              cell_value = cell_to_variable cell.to_s, binding
             end
+            # if cell_value.start_with?('$')
+            #   key = cell_value.gsub(/\$/, '')
+            #   logger.debug("key ----- #{key}")
+            #   if key.end_with?('[]')
+            #     key = key.gsub(/\[\]/,'')
+            #     begin
+            #       values = eval(key)
+            #       logger.debug("values ==== #{values}");
+            #       if values.is_a?(Array) && values.present?
+            #         values.each do |v|
+            #           s.insert_row row.idx
+            #           s[row.idx, 0] = v
+            #         end
+            #       end
+            #     rescue NameError
+            #     end
+            #   end
+            #   begin
+            #     # cell_value = eval(key)
+            #     cell_value = local_value(key,binding)
+            #   rescue NameError
+            #     logger.debug("not found ----- #{key}")
+            #     ''
+            #   end
+            # end
             s[row.idx, col_index] = cell_value
             s.row(row.idx).set_format(col_index, row.format(col_index))
-            s.format_column(col_index, row.format(col_index), {:width=>tpl_sheet.column(col_index).width})
-             # s.format_column(col_index, row.format(col_index), {:width=>3})
+            # if !formatted_columns.include?(col_index)
+              s.format_column(col_index, row.format(col_index), {:width=>tpl_sheet.column(col_index).width})
+              formatted_columns << col_index
+              # logger.debug("formatted_columns ---- #{formatted_columns}")
+            # end
           end
         end
+        tpl_sheet.merged_cells.each do |m|
+          # logger.debug("merged_cells ---- #{m}")
+          # 取得できるマージセルと設定するマージセルの順番が違う！
+          s.merge_cells(m[0], m[2], m[1], m[3])
+        end
+      end
         
         # s[0,0] = "#{project.name} - #{i.tracker.name} #{i.id}"
     		# s[1,0] = "#{i.subject}"
@@ -75,7 +108,7 @@ module IssueExportHelper
       #   history_row += 1
       #   history_index += 1
       # end
-  	end
+
   	# sheet1[0,0] = @project
     data = StringIO.new
     download_book.write data
@@ -91,4 +124,45 @@ module IssueExportHelper
     logger.debug("sheet name is === #{name}")
     name
 	end
+  def cell_to_variable(cell_value, context)
+    return cell_value unless cell_value.start_with?('$')
+
+    key = cell_value.gsub(/\$|\[|\]/, '').strip
+    logger.debug("key ----- #{key}")
+    # if key.end_with?('[]')
+    #   key = key.gsub(/\[\]/,'')
+    #   begin
+    #     values = eval(key)
+    #     logger.debug("values ==== #{values}");
+    #     if values.is_a?(Array) && values.present?
+    #       values.each do |v|
+    #         s.insert_row row.idx
+    #         s[row.idx, 0] = v
+    #       end
+    #     end
+    #   rescue NameError
+    #   end
+    # end
+    begin
+      # cell_value = eval(key)
+      logger.debug("local_variables ---- #{context.dup.eval('local_variables')}")
+      cell_value =  context.dup.eval(key)
+      logger.debug("value is #{cell_value}")
+      if cell_value.is_a?(Date)
+        cell_value = format_date(cell_value)
+      elsif cell_value.is_a?(Time)
+        cell_value = format_time(cell_value)
+      end
+     
+
+    rescue NameError
+      logger.debug("not found ----- #{key}")
+      cell_value = ''
+    end
+    cell_value
+  end
+
+  def block?(key)
+    key.end_with?('[]')
+  end
 end
