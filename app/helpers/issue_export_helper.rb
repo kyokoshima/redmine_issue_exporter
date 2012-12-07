@@ -19,37 +19,13 @@ module IssueExportHelper
           formatted_columns = []
           row.each_with_index do |cell, col_index|
             if block?(cell.to_s)
-              cell_to_variable(cell.to_s, binding).each do |v|
+              cell_to_variable(cell.to_s, binding()).each do |v|
                 # s.insert_row row.idx
               end
             else
               cell_value = cell_to_variable cell.to_s, binding
             end
-            # if cell_value.start_with?('$')
-            #   key = cell_value.gsub(/\$/, '')
-            #   logger.debug("key ----- #{key}")
-            #   if key.end_with?('[]')
-            #     key = key.gsub(/\[\]/,'')
-            #     begin
-            #       values = eval(key)
-            #       logger.debug("values ==== #{values}");
-            #       if values.is_a?(Array) && values.present?
-            #         values.each do |v|
-            #           s.insert_row row.idx
-            #           s[row.idx, 0] = v
-            #         end
-            #       end
-            #     rescue NameError
-            #     end
-            #   end
-            #   begin
-            #     # cell_value = eval(key)
-            #     cell_value = local_value(key,binding)
-            #   rescue NameError
-            #     logger.debug("not found ----- #{key}")
-            #     ''
-            #   end
-            # end
+           
             s[row.idx, col_index] = cell_value
             s.row(row.idx).set_format(col_index, row.format(col_index))
             # if !formatted_columns.include?(col_index)
